@@ -4,9 +4,10 @@
 
 | Run | Value |
 | --- | --- |
-| Generated (UTC) | 2026-11-23T13:02:46.628555+00:00 |
-| Duration | 0.000749 s |
-| Code | agent-security-lab 0.1.0 @ 93c8404 (dirty: False) |
+| Generated (UTC) | 2026-11-23T13:05:19.784749+00:00 |
+| Duration | 0.000714 s |
+| Code | agent-security-lab 0.1.0 @ 1823b64 (dirty: False) |
+| Source tree (sha256) | `262dfe5b19b1b21b49ef77546f62d371d99b4d62429bc4a5f8192c7ce206d93a` |
 | Policy | `security_lab.policy.PolicyGate` |
 | Agent | security_lab.mock_agent.MockAgent (deterministic mock; NOT a real LLM) |
 | Case files | `adversarial.jsonl` (8 cases, sha256 `3115d11f9bd7257f…`)<br>`benign.jsonl` (4 cases, sha256 `55b2207b092adf0a…`) |
