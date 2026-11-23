@@ -299,6 +299,10 @@ def render_markdown(summary: dict[str, Any]) -> str:
         f"@ {run['git'].get('commit') or 'no-git'} "
         f"(dirty: {run['git'].get('worktree_dirty')}) |"
     )
+    lines.append(
+        "| Source tree (sha256) | "
+        f"`{run.get('source_tree_sha256') or 'unavailable'}` |"
+    )
     lines.append(f"| Policy | `{run['policy']}` |")
     lines.append(f"| Agent | {run['agent']} |")
     lines.append(

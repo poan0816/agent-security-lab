@@ -451,6 +451,7 @@ def test_reports_are_written_and_redacted(
     report_text = report_path.read_text(encoding="utf-8")
     for case_id in EXPECTED_IDS:
         assert case_id in report_text
+    assert summary["run"]["source_tree_sha256"] in report_text
     assert "does **not** measure" in report_text
     assert "Attack success rate" in report_text
     assert "NOT a real LLM" in report_text
