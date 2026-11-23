@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-security-lab"
+version = "0.1.0"
+description = "Independent mock Agent tool-call security evaluation lab (synthetic data, in-memory sandbox)."
+requires-python = ">=3.10"
+authors = [{ name = "Security Lab" }]
+dependencies = [
+    "fastapi>=0.110,<1.0",
+    "pydantic>=2.6,<3.0",
+    "uvicorn>=0.27,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0,<9.0",
+    "httpx>=0.27,<1.0",
+]
+
+[project.scripts]
+security-lab = "security_lab.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
