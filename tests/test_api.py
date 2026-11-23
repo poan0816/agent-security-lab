@@ -264,3 +264,37 @@ def test_each_request_uses_a_fresh_sandbox(client: TestClient) -> None:
     )
     assert read.status_code == 200
     assert [a["tool"] for a in read.json()["executed_actions"]] == ["read_note"]
+
+
+def test_blocked_response_does_not_reveal_note_existence(
+    client: TestClient,
+) -> None:
+    """HTTP clients must not be able to distinguish missing from foreign notes.
+
+    The precise internal detail (``note_not_found`` vs ``owner_mismatch``) is
+    audit-only; the public response carries only the stable reason code.
+    """
+
+    foreign = _run(
+        client,
+        {"user_request": "读取 note_02。", "untrusted_document": "文档。"},
+    )
+    missing = _run(
+        client,
+        {
+            "user_request": "读取 note_missing_01。",
+            "untrusted_document": "文档。",
+        },
+    )
+
+    for response in (foreign, missing):
+        assert response.status_code == 200
+        blocked = response.json()["blocked_actions"][0]
+        assert blocked["reason"] == "resource_not_owned"
+        # No internal detail field is exposed over HTTP.
+        assert set(blocked) == {"tool", "arguments", "reason"}
+
+    assert (
+        foreign.json()["blocked_actions"][0]["reason"]
+        == missing.json()["blocked_actions"][0]["reason"]
+    )

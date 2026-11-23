@@ -90,13 +90,14 @@ def execute_request(
         decision = gate.authorize(trusted_context, raw_proposal, state)
         if not decision.allowed:
             reason = decision.reason or "policy_denied"
+            # The internal detail is audit-only: it is deliberately NOT put in
+            # the client-facing BlockedAction (no note-existence oracle).
             detail = decision.detail
             blocked.append(
                 BlockedAction(
                     tool=record.tool,
                     arguments=record.arguments,
                     reason=reason,
-                    detail=detail,
                 )
             )
             state.record_audit(
@@ -124,7 +125,6 @@ def execute_request(
                     tool=record.tool,
                     arguments=record.arguments,
                     reason=REASON_EXECUTION_ERROR,
-                    detail=detail,
                 )
             )
             state.record_audit(

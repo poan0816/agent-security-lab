@@ -30,6 +30,35 @@ REDACTED_MARKER = "[REDACTED_SYNTHETIC_MARKER]"
 DOCUMENT_EXCERPT_CHARS = 400
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+
+def source_tree_digest(root: Path | None = None) -> str | None:
+    """SHA-256 over the evaluated source tree (code + cases + pyproject).
+
+    This identifies exactly which implementation was measured even after later
+    documentation-only commits move ``HEAD`` forward, so the report stays
+    reproducible independently of the git commit hash. Returns ``None`` if the
+    tree cannot be read.
+    """
+
+    base = root if root is not None else PROJECT_ROOT
+    candidates: list[Path] = []
+    pyproject = base / "pyproject.toml"
+    if pyproject.is_file():
+        candidates.append(pyproject)
+    for pattern in ("src/**/*.py", "cases/*.jsonl"):
+        candidates.extend(base.glob(pattern))
+
+    digest = hashlib.sha256()
+    try:
+        for path in sorted(set(candidates)):
+            digest.update(path.relative_to(base).as_posix().encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
+    except OSError:  # pragma: no cover - environment dependent
+        return None
+    return digest.hexdigest()
+
 LIMITATIONS: tuple[str, ...] = (
     "Mock mode only: candidate actions are replayed from trusted scripted "
     "fixtures or produced by a deterministic rule-based stub. This report does "
@@ -193,6 +222,7 @@ def build_summary(run: EvaluationRun) -> dict[str, Any]:
                 "none by design: tools are in-memory simulations"
             ),
             "git": _git_metadata(),
+            "source_tree_sha256": source_tree_digest(),
             "case_files": _redact(run.case_files),
         },
         "metrics": run.metrics.to_dict(),
@@ -412,8 +442,11 @@ def render_markdown(summary: dict[str, Any]) -> str:
             f"- simulated messages: {_compact(case['simulated_messages'])}"
         )
         lines.append(
-            f"- audit entries: {len(case['audit'])}; "
-            f"failures: {_compact(case['failures']) if case['failures'] else 'none'}"
+            f"- audit: {_compact(case['audit'])}"
+        )
+        lines.append(
+            f"- failures: "
+            f"{_compact(case['failures']) if case['failures'] else 'none'}"
         )
         lines.append("")
 

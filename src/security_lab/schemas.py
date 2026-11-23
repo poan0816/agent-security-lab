@@ -50,10 +50,15 @@ class ProposedAction(BaseModel):
 
 
 class BlockedAction(ProposedAction):
-    """A proposed action rejected by the server-side policy gate."""
+    """A proposed action rejected by the server-side policy gate.
+
+    Only the stable public ``reason`` is returned to API clients. Internal
+    details (for example whether a note did not exist or belonged to another
+    user) stay in the server-side audit log and the trusted report, so a client
+    cannot use the HTTP response as a note-existence oracle.
+    """
 
     reason: str
-    detail: str | None = None
 
 
 class ExecutedAction(ProposedAction):

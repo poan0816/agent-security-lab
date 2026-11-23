@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -389,10 +390,7 @@ class EvaluationRun:
     policy_name: str
     started_at: datetime
     generated_at: datetime
-
-    @property
-    def duration_seconds(self) -> float:
-        return (self.generated_at - self.started_at).total_seconds()
+    duration_seconds: float
 
 
 # ---------------------------------------------------------------------------
@@ -708,9 +706,12 @@ def evaluate_cases(
 
     gate = policy if policy is not None else PolicyGate()
     started_at = datetime.now(timezone.utc)
+    # perf_counter avoids Windows' coarse wall-clock tick for the duration.
+    started_perf = time.perf_counter()
 
     evaluations = [run_case(case, policy=gate) for case in cases]
     metrics = aggregate_metrics(evaluations)
+    duration_seconds = time.perf_counter() - started_perf
     generated_at = datetime.now(timezone.utc)
 
     return EvaluationRun(
@@ -721,4 +722,5 @@ def evaluate_cases(
         policy_name=f"{type(gate).__module__}.{type(gate).__qualname__}",
         started_at=started_at,
         generated_at=generated_at,
+        duration_seconds=duration_seconds,
     )

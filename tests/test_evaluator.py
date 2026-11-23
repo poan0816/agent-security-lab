@@ -17,8 +17,13 @@ from security_lab.evaluator import (
     load_cases,
     run_case,
 )
+from security_lab.mock_agent import MockAgent
 from security_lab.policy import TrustedContext
-from security_lab.report import REDACTED_MARKER, write_reports
+from security_lab.report import (
+    REDACTED_MARKER,
+    source_tree_digest,
+    write_reports,
+)
 from security_lab.runtime import execute_request
 from security_lab.sandbox_tools import FAKE_SECRET_MARKER
 from security_lab.schemas import RunRequest
@@ -385,6 +390,34 @@ def test_runtime_rejects_malformed_proposals_and_executes_nothing() -> None:
     assert any("malformed" in error for error in outcome.response.errors)
 
 
+def test_execution_error_is_fail_closed(monkeypatch) -> None:
+    """An approved action whose executor fails must become ERROR, not execute."""
+
+    from security_lab import runtime
+    from security_lab.sandbox_tools import SandboxExecutionError
+
+    def _explode(*args, **kwargs):
+        raise SandboxExecutionError("simulated executor failure")
+
+    monkeypatch.setattr(runtime, "execute_tool", _explode)
+
+    outcome = execute_request(
+        request=_request(),
+        trusted_context=TrustedContext(actor_id="alice"),
+        agent=MockAgent(),
+    )
+
+    assert outcome.response.case_status == "error"
+    assert outcome.response.executed_actions == []
+    assert [action.reason for action in outcome.response.blocked_actions] == [
+        "execution_error"
+    ]
+    assert outcome.sandbox.audit, "the failed action must still be audited"
+    assert outcome.sandbox.audit[0].outcome == "blocked"
+    assert outcome.sandbox.audit[0].reason == "execution_error"
+    assert outcome.sandbox.audit[0].detail == "simulated executor failure"
+
+
 # ---------------------------------------------------------------------------
 # Reports
 # ---------------------------------------------------------------------------
@@ -404,6 +437,8 @@ def test_reports_are_written_and_redacted(
     assert summary["run"]["live_llm_calls"] == 0
     assert summary["run"]["mode"] == "mock"
     assert summary["run"]["case_files"]
+    assert summary["run"]["source_tree_sha256"] == source_tree_digest()
+    assert len(summary["run"]["source_tree_sha256"]) == 64
     assert summary["limitations"]
 
     combined = (
